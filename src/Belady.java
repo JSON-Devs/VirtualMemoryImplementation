@@ -1,15 +1,14 @@
 import java.util.Random;
 import java.util.Scanner;
 
-public class LFU {
+public class Belady {
 	public static void main(String[] args) {
 		//Initialize Variables
-		int noOfPageFrames, noOfPageFaults = 0, lastOpenFrame;
-		final int noOfAddresses = 100, pageSize = 4096;
-		LFUPage[] frames;
+		int noOfPageFrames, noOfPageFaults = 0, lastOpenFrame, largestNextIn, noOfDoesNotExist, firstIn;
+		final int noOfAddresses = 10, pageSize = 4096;
+		BeladyPage[] frames;
 		byte[] addressPageNumbers = new byte[noOfAddresses];
-		boolean pageFault, openFrame;
-		int smallestPageCount, earliestPageIn;
+		boolean pageFault, openFrame, nextIn;
 
 		//Get the number of page frames available from the user
 		Scanner keyboard = new Scanner(System.in);
@@ -23,9 +22,9 @@ public class LFU {
 
 		//Initialize the frame array and set all values to a value outside of the max page number
 		//Max page number is 15 so value set is 16
-		frames = new LFUPage[noOfPageFrames];
+		frames = new BeladyPage[noOfPageFrames];
 		for(int i = 0; i < frames.length; i++){
-			LFUPage page = new LFUPage((byte)16);
+			BeladyPage page = new BeladyPage((byte)16);
 			frames[i] = page;
 		}
 
@@ -45,7 +44,6 @@ public class LFU {
 				//If it exists, set pageFault to false
 				if(frames[j].pageNumber == addressPageNumbers[i]){
 					pageFault = false;
-					frames[j].count++;
 				}
 			}
 			//If there was a page fault add the new page into the frame
@@ -62,40 +60,78 @@ public class LFU {
 				//If there is an open space in the array, add the page into that open frame
 				if(openFrame){
 					frames[lastOpenFrame].pageNumber = addressPageNumbers[i];
-					frames[lastOpenFrame].count++;
-					frames[lastOpenFrame].whenWasLastTimeIn = i;
+					frames[lastOpenFrame].lastTimeIn = i;
 				}
 				else{
-					smallestPageCount = noOfAddresses + 1;
-					earliestPageIn = noOfAddresses + 1;
-					//Loop through the array to set the smallest page count and earliest page in for replacement
 					for(int j = 0; j < frames.length; j++){
-						if(frames[j].count < smallestPageCount){
-							smallestPageCount = frames[j].count;
+						nextIn = false;
+						for(int k = i; k < addressPageNumbers.length; k++){
+							if(!nextIn && frames[j].pageNumber == addressPageNumbers[k]){
+								frames[j].nextTimeIn = k;
+								nextIn = true;
+							}
 						}
-
-						if(frames[j].count == smallestPageCount && frames[j].whenWasLastTimeIn < earliestPageIn){
-							earliestPageIn = frames[j].whenWasLastTimeIn;
+						if(!nextIn){
+							frames[j].existsInFuture = false;
 						}
 					}
-					//Loop through the frame array to set the page into the correct frame
+					largestNextIn = 0;
 					for(int j = 0; j < frames.length; j++){
-						if(frames[j].whenWasLastTimeIn == earliestPageIn){
+						if(frames[j].nextTimeIn > largestNextIn){
+							largestNextIn = frames[j].nextTimeIn;
+						}
+					}
+
+					noOfDoesNotExist = 0;
+					for(int j = 0; j < frames.length; j++){
+						if(!frames[j].existsInFuture){
+							noOfDoesNotExist++;
+						}
+					}
+
+					for(int j = 0; j < frames.length; j++){
+						if(frames[j].nextTimeIn == largestNextIn && noOfDoesNotExist == 0){
 							frames[j].pageNumber = addressPageNumbers[i];
-							frames[j].count = 1;
-							frames[j].whenWasLastTimeIn = i;
+							frames[j].nextTimeIn = 0;
+							frames[j].lastTimeIn = i;
+						}
+						if(noOfDoesNotExist  == 1){
+							for(int k = 0; k < frames.length; k++){
+								if(!frames[k].existsInFuture){
+									frames[k].pageNumber = addressPageNumbers[i];
+									frames[k].nextTimeIn = 0;
+									frames[k].lastTimeIn = i;
+								}
+							}
+						}
+						if(noOfDoesNotExist > 1){
+							firstIn = noOfPageFrames + 1;
+							for(int k = 0; k < frames.length; k ++){
+								if(!frames[k].existsInFuture){
+									if(frames[k].lastTimeIn < firstIn){
+										firstIn = frames[k].lastTimeIn;
+									}
+								}
+							}
+							for(int k = 0; k < frames.length; k++){
+								if(frames[k].lastTimeIn == firstIn){
+									frames[k].pageNumber = addressPageNumbers[i];
+									frames[k].nextTimeIn = 0;
+									frames[k].lastTimeIn = i;
+								}
+							}
 						}
 					}
 				}
 				noOfPageFaults++;
 			}
-			System.out.print((i + 1) +" => ");
+			//System.out.print((i + 1) +" => ");
 			//Loop through the frame array to show the process in the console
 			for(int j = 0; j < frames.length; j++){
 				if(frames[j].pageNumber != 16) {
-					System.out.print(j + ": " + frames[j].pageNumber);
+					System.out.print( frames[j].pageNumber);
 				}else{
-					System.out.print(j + ":  ");
+					//System.out.print(j + ":  ");
 				}
 				if( j != frames.length - 1){
 					System.out.print(" - ");
@@ -107,15 +143,17 @@ public class LFU {
 	}
 }
 
-class LFUPage{
+class BeladyPage{
 	byte pageNumber;
-	int count;
-	int whenWasLastTimeIn;
+	int nextTimeIn;
+	int lastTimeIn;
+	boolean existsInFuture;
 
 	//Constructor to initialize a new page
-	LFUPage(byte pageNumber){
+	BeladyPage(byte pageNumber){
 		this.pageNumber = pageNumber;
-		this.count = 0;
-		this.whenWasLastTimeIn = 0;
+		this.nextTimeIn = 0;
+		lastTimeIn = 0;
+		existsInFuture = true;
 	}
 }
