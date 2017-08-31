@@ -20,6 +20,7 @@ public class LFU {
 			System.out.println("Error: Please enter a number between 2 and 7");
 			noOfPageFrames = keyboard.nextInt();
 		}
+		keyboard.close();
 
 		//Initialize the frame array and set all values to a value outside of the max page number
 		//Max page number is 15 so value set is 16
@@ -35,7 +36,7 @@ public class LFU {
 			addressPageNumbers[i] = (byte) (randomNum.nextInt(Short.MAX_VALUE + 1) / pageSize);
 			System.out.print(addressPageNumbers[i] + " - ");
 		}
-		System.out.print("\n");
+		System.out.print("\n\n");
 
 		//Loop through the address page numbers
 		for(int i = 0; i < addressPageNumbers.length; i++){
@@ -89,13 +90,10 @@ public class LFU {
 				}
 				noOfPageFaults++;
 			}
-			System.out.print((i + 1) +" => ");
 			//Loop through the frame array to show the process in the console
 			for(int j = 0; j < frames.length; j++){
 				if(frames[j].pageNumber != 16) {
-					System.out.print(j + ": " + frames[j].pageNumber);
-				}else{
-					System.out.print(j + ":  ");
+					System.out.print(frames[j].pageNumber);
 				}
 				if( j != frames.length - 1){
 					System.out.print(" - ");
